@@ -12,6 +12,7 @@ router.get("/", function (req, res) {
 /*
     Add employee to database. 
     Only use if you hire a new employee 
+    @param: Name    first name + last name (ex: JonDoe)
  */
 router.post("/add-employee", (req, res) => {
     var con = mysql.createConnection({
@@ -29,8 +30,7 @@ router.post("/add-employee", (req, res) => {
             res.status(400).send({message: "Error: Invalid Name"})
             return
         }
-        sqlQuery = "CREATE TABLE " + req.body.name + " (date varchar(20), class varchar(50), clinic varchar(50), hours float, privateLessonName varchar(50), privateLessonLength float, chitNumber int);"
-        console.log(sqlQuery)
+        var sqlQuery = "CREATE TABLE " + req.body.name + " (date varchar(20), clinic varchar(50), hours float, privateLessonName varchar(50), privateLessonLength float, chitNumber varchar(20));"
         con.query(sqlQuery, function (err, result) {
             if (err) {
                 res.status(400).send({message: "Error: User already exists"})
@@ -45,6 +45,7 @@ router.post("/add-employee", (req, res) => {
     Remove employee from database
     This will destroy all of their information
     Only use if employee is fired or leaves
+    @param: Name    first name + last name (ex: JonDoe)
 */
 router.post("/remove-employee", (req, res) => {
     var con = mysql.createConnection({
@@ -58,12 +59,11 @@ router.post("/remove-employee", (req, res) => {
             res.status(400).send({message: "Error: Error Connecting to Database"})
             return
         }
-        if(req.body.name == undefined || req.body.name == null){
-            res.status(400).send({message: "Error: Invalid Name"})
+        if(!req.body || !req.body.name){
+            res.status(400).send({message: "Error: Bad Request"})
             return
         }
-        sqlQuery = "DROP TABLE " + req.body.name  
-        console.log(sqlQuery)
+        var sqlQuery = "DROP TABLE " + req.body.name  
         con.query(sqlQuery, function (err, result) {
             if (err) {
                 res.status(400).send({message: "Error: Error dropping, check that user exists"})
@@ -74,5 +74,76 @@ router.post("/remove-employee", (req, res) => {
     });
 })
 
+/*
+    Add group hours to table 
+    What you need: name, date, class/clinic, hours
+*/
+router.post('/add-group', (req, res) => {
+    var con = mysql.createConnection({
+        host: process.env.SQL_HOST,
+        user: process.env.SQL_USER,
+        password: process.env.SQL_PASSWORD,
+        database: process.env.SQL_DATABASE,
+    });
+    con.connect( (err) => {
+        if (err) {
+            res.status(400).send({message: "Error: Error Connecting to Database"})
+            return
+        }
+        if(!req.body || !req.body.name || !req.body.group || !req.body.date || !req.body.hours){
+            res.status(400).send({message: "Error: Bad Request"})
+            return
+        }
+        //INSERT INTO ConnorTodd (date, clinic, hours) VALUES ('01/14/19', 'TX', 3);
+        var sqlQuery = "INSERT INTO " + req.body.name + " (date, clinic, hours) VALUES (\'" + req.body.date + "\', \'" + req.body.group + "\', \'" + req.body.hours + "\');"
+        con.query(sqlQuery, (err, result) => {
+            if (err) {
+                res.status(400).send({message: "Error: Error adding hours for group"})
+                return
+            }
+            res.status(200).send({message: "Hours added for group"})
+        })
+    })
+})
+
+/*
+    Add private lesson hours to table 
+    What you need: name, date, private lesson, privateLessonLength, chit number
+*/
+router.post('/add-private', (req, res) => {
+    var con = mysql.createConnection({
+        host: process.env.SQL_HOST,
+        user: process.env.SQL_USER,
+        password: process.env.SQL_PASSWORD,
+        database: process.env.SQL_DATABASE,
+    });
+    con.connect( (err) => {
+        if (err) {
+            res.status(400).send({message: "Error: Error Connecting to Database"})
+            return
+        }
+        if(!req.body || !req.body.name || !req.body.lessonName || !req.body.date || !req.body.privateLessonLength, !req.body.chit){
+            res.status(400).send({message: "Error: Bad Request"})
+            return
+        }
+        //INSERT INTO ConnorTodd (date, clinic, hours) VALUES ('01/14/19', 'TX', 3);
+        var sqlQuery = "INSERT INTO " + req.body.name + " (date, privateLessonName, privateLessonLength, chitNumber) VALUES (\'" + req.body.date + "\', \'" + req.body.lessonName + "\', \'" + req.body.privateLessonLength + "\', \'" + req.body.chit + "\');"
+        con.query(sqlQuery, (err, result) => {
+            if (err) {
+                res.status(400).send(err)
+                return
+            }
+            res.status(200).send({message: "Hours added for private lesson"})
+        })
+    })
+})
+
+/*
+    Add route to calculate totals
+*/
+
+/*
+    Add route to clear past entries
+*/
 module.exports = router
 
