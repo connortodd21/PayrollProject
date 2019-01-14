@@ -1,4 +1,5 @@
 const express = require ('express');
+var session = require('express-session');
 let cookieParser = require('cookie-parser');
 var cors = require('cors');
 require('dotenv').config();
@@ -13,6 +14,22 @@ const app = express(cors());
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(session({
+    key: 'user_sid',
+    secret: process.env.SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        expires: process.env.EXPIRE
+    }
+}));
+
+app.use((req, res, next) => {
+    if (req.cookies.user_sid && !req.session.user) {
+        res.clearCookie('user_sid');        
+    }
+    next();
+});
 
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
