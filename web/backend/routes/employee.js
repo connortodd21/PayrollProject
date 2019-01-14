@@ -12,7 +12,8 @@ router.get("/", function (req, res) {
 /*
     Add employee to database. 
     Only use if you hire a new employee 
-    @param: Name    first name + last name (ex: JonDoe)
+    @params
+    name: first name + last name (ex: JonDoe)
  */
 router.post("/add-employee", (req, res) => {
     var con = mysql.createConnection({
@@ -30,7 +31,7 @@ router.post("/add-employee", (req, res) => {
             res.status(400).send({message: "Error: Invalid Name"})
             return
         }
-        var sqlQuery = "CREATE TABLE " + req.body.name + " (date varchar(20), clinic varchar(50), hours float, privateLessonName varchar(50), privateLessonLength float, chitNumber varchar(20));"
+        var sqlQuery = "CREATE TABLE " + req.body.name + " (date varchar(20), clinic varchar(50), hours float, leader int, privateLessonName varchar(50), privateLessonLength float, chitNumber varchar(20));"
         con.query(sqlQuery, function (err, result) {
             if (err) {
                 res.status(400).send({message: "Error: User already exists"})
@@ -45,7 +46,8 @@ router.post("/add-employee", (req, res) => {
     Remove employee from database
     This will destroy all of their information
     Only use if employee is fired or leaves
-    @param: Name    first name + last name (ex: JonDoe)
+    @params 
+    name: first name + last name (ex: JonDoe)
 */
 router.post("/remove-employee", (req, res) => {
     var con = mysql.createConnection({
@@ -69,14 +71,18 @@ router.post("/remove-employee", (req, res) => {
                 res.status(400).send({message: "Error: Error dropping, check that user exists"})
                 return
             }
-            res.status(200).send({message: req.body.name + " Removeed"})
+            res.status(200).send({message: req.body.name + " Removed"})
         }); 
     });
 })
 
 /*
-    Add group hours to table 
-    What you need: name, date, class/clinic, hours
+    Add a new private lesson to an employee
+    @params
+    name: first name + last name (ex: JonDoe)
+    group: name of group/clinic
+    date: date of group (MM/DD/YY)
+    hours: length of group
 */
 router.post('/add-group', (req, res) => {
     var con = mysql.createConnection({
@@ -101,14 +107,19 @@ router.post('/add-group', (req, res) => {
                 res.status(400).send({message: "Error: Error adding hours for group"})
                 return
             }
-            res.status(200).send({message: "Hours added for group"})
+            res.status(200).send({message: "Hours added for " + req.body.group})
         })
     })
 })
 
 /*
-    Add private lesson hours to table 
-    What you need: name, date, private lesson, privateLessonLength, chit number
+    Add a new private lesson to an employee
+    @params
+    name: first name + last name (ex: JonDoe)
+    lessonName: last name of person recieving private lesson
+    date: date of lesson (MM/DD/YY)
+    privateLessonLength: length of private lesson in hours
+    chit: chit number
 */
 router.post('/add-private', (req, res) => {
     var con = mysql.createConnection({
@@ -139,8 +150,66 @@ router.post('/add-private', (req, res) => {
 })
 
 /*
-    Add route to calculate totals
+    Route to calculate total hours for group lessons
+    @params
+    name: first name + last name (ex: JonDoe) 
 */
+router.get('/group-count', (req, res) => {
+    var con = mysql.createConnection({
+        host: process.env.SQL_HOST,
+        user: process.env.SQL_USER,
+        password: process.env.SQL_PASSWORD,
+        database: process.env.SQL_DATABASE,
+    });
+    con.connect( (err) => {
+        if (err) {
+            res.status(400).send({message: "Error: Error Connecting to Database"})
+            return
+        }
+        var sqlQuery = "SELECT SUM(hours) FROM " + req.headers.name
+        con.query(sqlQuery, (err, result) => {
+            if (err) {
+                res.status(400).send(err)
+                return
+            }
+            var ret = {
+                hours: result[0]['SUM(hours)']
+            }
+            res.status(200).send(ret)
+        }) 
+    })
+})
+
+/*
+    Route to calculate total hours for private lessons
+    @params
+    name: first name + last name (ex: JonDoe) 
+*/
+router.get('/private-count', (req, res) => {
+    var con = mysql.createConnection({
+        host: process.env.SQL_HOST,
+        user: process.env.SQL_USER,
+        password: process.env.SQL_PASSWORD,
+        database: process.env.SQL_DATABASE,
+    });
+    con.connect( (err) => {
+        if (err) {
+            res.status(400).send({message: "Error: Error Connecting to Database"})
+            return
+        }
+        var sqlQuery = "SELECT SUM(privateLessonLength) FROM " + req.headers.name
+        con.query(sqlQuery, (err, result) => {
+            if (err) {
+                res.status(400).send(err)
+                return
+            }
+            var ret = {
+                hours: result[0]['SUM(privateLessonLength)']
+            }
+            res.status(200).send(ret)
+        }) 
+    })
+})
 
 /*
     Add route to clear past entries
