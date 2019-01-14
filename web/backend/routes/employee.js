@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var mysql = require('mysql');
+var encrypt = require('../middleware/encrypt')
 
 /**
  * All employee related routes
@@ -8,6 +9,45 @@ var mysql = require('mysql');
 router.get("/", function (req, res) {
     res.send('This route is for all user related tasks');
 });
+
+/*
+    Register new employee
+    @params
+    username: employee's username
+    password: password for employee
+    email: employee email
+    _id: employee ID
+*/
+router.post("/register", (req, res) => {
+    var con = mysql.createConnection({
+        host: process.env.SQL_HOST,
+        user: process.env.SQL_USER,
+        password: process.env.SQL_PASSWORD,
+        database: process.env.SQL_DATABASE,
+    });
+    con.connect( (err) => {
+        if (err) {
+            res.status(400).send({message: "Error: Connection to Database"})
+            return
+        }
+        if(!req.body || !req.body.username || !req.body.password){
+            res.status(400).send({message: "Error: Bad request"})
+            return
+        }
+        encrypt(req.body.password).then( (encryptedPassword) => {
+            console.log(encryptedPassword)
+            var sqlQuery = "INSERT INTO " + process.env.SQL_EMPLOYEES + " (username, password) VALUES (\'" + req.body.username + "\', \'" + encryptedPassword + "\');"
+            console.log(sqlQuery)
+            con.query(sqlQuery, (err, result) => {
+                if (err) {
+                    res.status(400).send(err)
+                    return
+                }
+                res.status(200).send({message: "Employee registered!"})
+            })
+        })
+    })
+})
 
 /*
     Add employee to database. 
@@ -27,7 +67,7 @@ router.post("/add-employee", (req, res) => {
             res.status(400).send({message: "Error: Connection to Database"})
             return
         }
-        if(req.body.name == undefined || req.body.name == null){
+        if(!req.body || !req.body.name){
             res.status(400).send({message: "Error: Invalid Name"})
             return
         }
@@ -96,15 +136,15 @@ router.post('/add-group', (req, res) => {
             res.status(400).send({message: "Error: Error Connecting to Database"})
             return
         }
-        if(!req.body || !req.body.name || !req.body.group || !req.body.date || !req.body.hours){
+        if(!req.body || !req.body.name || !req.body.group || !req.body.date || !req.body.hours || !req.body.leader){
             res.status(400).send({message: "Error: Bad Request"})
             return
         }
         //INSERT INTO ConnorTodd (date, clinic, hours) VALUES ('01/14/19', 'TX', 3);
-        var sqlQuery = "INSERT INTO " + req.body.name + " (date, clinic, hours) VALUES (\'" + req.body.date + "\', \'" + req.body.group + "\', \'" + req.body.hours + "\');"
+        var sqlQuery = "INSERT INTO " + req.body.name + " (date, clinic, hours, leader) VALUES (\'" + req.body.date + "\', \'" + req.body.group + "\', \'" + req.body.hours + "\', \'" + req.body.leader + "\');"
         con.query(sqlQuery, (err, result) => {
             if (err) {
-                res.status(400).send({message: "Error: Error adding hours for group"})
+                res.status(400).send(err)
                 return
             }
             res.status(200).send({message: "Hours added for " + req.body.group})
