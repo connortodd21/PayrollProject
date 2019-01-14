@@ -88,15 +88,22 @@ router.post("/login", (req, res) => {
                 res.status(400).send(err)
                 return
             }
+            if(!result || result.length == 0){
+                res.status(400).send({message: "Error: Username is incorrect"})
+                return
+            }
             var cipthertext = result[0].password
             bcrypt.compare(req.body.password, cipthertext, function(err, comp) {
                 if(comp == false){
-                    res.status(400).send({message: "Error: Username or Password is incorrect"})
+                    res.status(400).send({message: "Error: Password is incorrect"})
                     return
                 }
-                req.session.user = result.dataValues
+                else{
+                    req.session.user = result.dataValues
+                    res.status(200).send({message: "User logged in"})
+                    return
+                }
             });
-            res.status(200).send({message: "User logged in"})
         }) 
     })    
 })
