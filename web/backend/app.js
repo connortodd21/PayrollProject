@@ -20,7 +20,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        expires: process.env.EXPIRE
+        expires: 600000
     }
 }));
 

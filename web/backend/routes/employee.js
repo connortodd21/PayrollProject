@@ -3,12 +3,13 @@ var router = express.Router();
 var mysql = require('mysql');
 const bcrypt = require('bcrypt');
 var encrypt = require('../middleware/encrypt')
+var authenticate = require('../middleware/auth')
 
 /**
  * All employee related routes
  */
 router.get("/", function (req, res) {
-    res.send('This route is for all user related tasks');
+    res.send('This route is for all employee related tasks');
 });
 
 /*
@@ -49,6 +50,7 @@ router.post("/register", (req, res) => {
                     return
                 }
                 res.status(200).send({message: "Employee registered!"})
+                return
             })
         })
     })
@@ -99,7 +101,8 @@ router.post("/login", (req, res) => {
                     return
                 }
                 else{
-                    req.session.user = result.dataValues
+                    req.session.key = result[0].username
+                    console.log(req.session)
                     res.status(200).send({message: "User logged in"})
                     return
                 }
@@ -115,7 +118,7 @@ router.post("/login", (req, res) => {
     @params
     name: first name + last name (ex: JonDoe)
  */
-router.post("/add-employee", (req, res) => {
+router.post("/add-employee", authenticate, (req, res) => {
     if(!req.body || !req.body.name || !req.body.standing){
         res.status(400).send({message: "Error: Bad Request"})
         return
@@ -143,6 +146,7 @@ router.post("/add-employee", (req, res) => {
                 return
             }
             res.status(200).send({message: "Database Created for " + req.body.name})
+            return
         }); 
     });
 });
@@ -150,14 +154,19 @@ router.post("/add-employee", (req, res) => {
 /*
     Remove employee from database
     This will destroy all of their information
+    Admin only function
     Only use if employee is fired or leaves
     @params 
     name: first name + last name (ex: JonDoe)
 */
-router.post("/remove-employee", (req, res) => {
+router.post("/remove-employee", authenticate, (req, res) => {
     if(!req.body || !req.body.name){
         res.status(400).send({message: "Error: Bad Request"})
         return
+    }
+    if(req.body.standing != 'admin'){
+        res.status(401).send({message: "Error: User is not an Admin"})
+        return;
     }
     var con = mysql.createConnection({
         host: process.env.SQL_HOST,
@@ -178,6 +187,7 @@ router.post("/remove-employee", (req, res) => {
                 return
             }
             res.status(200).send({message: req.body.name + " Removed"})
+            return
         }); 
     });
 })
@@ -190,7 +200,7 @@ router.post("/remove-employee", (req, res) => {
     date: date of group (MM/DD/YY)
     hours: length of group
 */
-router.post('/add-group', (req, res) => {
+router.post('/add-group', authenticate, (req, res) => {
     if(!req.body || !req.body.name || !req.body.group || !req.body.date || !req.body.hours || !req.body.leader){
         res.status(400).send({message: "Error: Bad Request"})
         return
@@ -215,6 +225,7 @@ router.post('/add-group', (req, res) => {
                 return
             }
             res.status(200).send({message: "Hours added for " + req.body.group})
+            return
         })
     })
 })
@@ -228,11 +239,12 @@ router.post('/add-group', (req, res) => {
     privateLessonLength: length of private lesson in hours
     chit: chit number
 */
-router.post('/add-private', (req, res) => {
+router.post('/add-private', authenticate, (req, res) => {
     if(!req.body || !req.body.name || !req.body.lessonName || !req.body.date || !req.body.privateLessonLength, !req.body.chit){
         res.status(400).send({message: "Error: Bad Request"})
         return
     }
+    console.log(req.session)
     var con = mysql.createConnection({
         host: process.env.SQL_HOST,
         user: process.env.SQL_USER,
@@ -253,6 +265,7 @@ router.post('/add-private', (req, res) => {
                 return
             }
             res.status(200).send({message: "Hours added for private lesson"})
+            return
         })
     })
 })
@@ -262,7 +275,7 @@ router.post('/add-private', (req, res) => {
     @params
     name: first name + last name (ex: JonDoe) 
 */
-router.get('/group-count', (req, res) => {
+router.get('/group-count', authenticate, (req, res) => {
     if(!req.body || !req.body.name){
         res.status(400).send({message: "Error: Bad Request"})
         return
@@ -289,6 +302,7 @@ router.get('/group-count', (req, res) => {
                 hours: result[0]['SUM(hours)']
             }
             res.status(200).send(ret)
+            return
         }) 
     })
 })
@@ -298,7 +312,7 @@ router.get('/group-count', (req, res) => {
     @params
     name: first name + last name (ex: JonDoe) 
 */
-router.get('/private-count', (req, res) => {
+router.get('/private-count', authenticate, (req, res) => {
     if(!req.body || !req.body.name){
         res.status(400).send({message: "Error: Bad Request"})
         return
@@ -325,6 +339,7 @@ router.get('/private-count', (req, res) => {
                 hours: result[0]['SUM(privateLessonLength)']
             }
             res.status(200).send(ret)
+            return
         }) 
     })
 })
@@ -334,7 +349,7 @@ router.get('/private-count', (req, res) => {
     @params
     name: first name + last name (ex: JonDoe)
 */
-router.get("/all-hours", (req, res) => {
+router.get("/all-hours", authenticate, (req, res) => {
     if(!req.headers.name){
         res.status(400).send({message: "Error: Bad Request"})
         return
@@ -358,6 +373,7 @@ router.get("/all-hours", (req, res) => {
                 return
             }
             res.status(200).send(result)
+            return
         }) 
     })
 })
