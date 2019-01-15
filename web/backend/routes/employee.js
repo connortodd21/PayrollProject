@@ -102,13 +102,27 @@ router.post("/login", (req, res) => {
                 }
                 else{
                     req.session.key = result[0].username
-                    console.log(req.session)
+                    req.session.views = 1
                     res.status(200).send({message: "User logged in"})
                     return
                 }
             });
         }) 
     })    
+})
+
+/*
+    Logout
+*/
+router.post("/logout", (req, res) => {
+    req.session.views = 0;
+    // res.clearCookie();
+    // console.log(res)
+    // res.sessionStore.clear((err) => {
+    //     res.status(500).send(err)
+    // })
+    res.status(200).send({message: "User logged out"})
+    return
 })
 
 /*
@@ -244,7 +258,6 @@ router.post('/add-private', authenticate, (req, res) => {
         res.status(400).send({message: "Error: Bad Request"})
         return
     }
-    console.log(req.session)
     var con = mysql.createConnection({
         host: process.env.SQL_HOST,
         user: process.env.SQL_USER,
