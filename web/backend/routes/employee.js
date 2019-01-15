@@ -116,11 +116,6 @@ router.post("/login", (req, res) => {
 */
 router.post("/logout", (req, res) => {
     req.session.views = 0;
-    // res.clearCookie();
-    // console.log(res)
-    // res.sessionStore.clear((err) => {
-    //     res.status(500).send(err)
-    // })
     res.status(200).send({message: "User logged out"})
     return
 })
