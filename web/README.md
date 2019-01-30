@@ -1,11 +1,8 @@
 # Payroll
 
-Technologies used:
+###Technologies used:
 
 Angular
-
 Node
-
 Express
-
 MySQL
