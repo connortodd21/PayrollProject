@@ -1,6 +1,6 @@
 # Payroll
 
-###Technologies used:
+### Technologies used:
 
 Angular
 
